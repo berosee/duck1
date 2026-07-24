@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta content='img.jpg' property='og:image'/>  
-  <title>utube duck</title>
+  <title>utube player</title>
 
   <style>
     /* 기본 스타일 */
@@ -15,21 +15,60 @@
       padding: 0;
     }
 
-    /* 플레이어 영역 */
+    /* 상단 메뉴 고정 */
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      padding: 15px 0;
+      background: #ffffff;
+      border-bottom: 1px solid #ddd;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    .nav a {
+      text-decoration: none;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #666;
+      background: #f1f1f1;
+      transition: 0.3s;
+    }
+
+    .nav a.active {
+      background: #4a7cff;
+      color: #fff;
+    }
+
+    /* 플레이어 영역 고정 (중요!) */
     .player-box {
       max-width: 720px;
+      width: 100%;
+      margin: 0 auto;
+      background: #f8f9fb; /* 배경색과 통일하여 스크롤 시 이질감 제거 */
+      position: sticky;
+      top: 61px; /* 네비게이션 높이에 맞춰 조정 */
+      z-index: 999;
+      padding: 15px 0; /* 상하 여백 */
+    }
+
+    .player-container {
       width: 95%;
-      margin: 20px auto;
+      margin: 0 auto;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      background: #000;
     }
 
     .player-ratio {
       position: relative;
       width: 100%;
       padding-top: 56.25%; /* 16:9 비율 */
-      background: #000;
     }
 
     #player {
@@ -47,12 +86,12 @@
       border-collapse: collapse;
       background: #fff;
       border-radius: 8px;
-      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
 
     td {
       position: relative;
-      padding: 12px 15px 12px 40px;
+      padding: 15px 15px 15px 45px;
       border-bottom: 1px solid #eee;
       cursor: pointer;
       line-height: 1.4;
@@ -73,7 +112,7 @@
     tr.active td::before {
       content: "▶";
       position: absolute;
-      left: 15px;
+      left: 18px;
       top: 50%;
       transform: translateY(-50%);
       color: #4a7cff;
@@ -84,7 +123,7 @@
       display: flex;
       justify-content: center;
       gap: 15px;
-      margin-bottom: 50px;
+      padding: 20px 0 50px;
     }
 
     .controls button {
@@ -96,19 +135,29 @@
       background: #fff;
       border-radius: 30px;
       transition: 0.2s;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
     .controls button:hover {
       background: #f1f1f1;
+      border-color: #ccc;
     }
   </style>
 </head>
 
 <body>
 
+<div class="nav">
+  <a href="?cat=old" id="nav-old">OLD</a>
+  <a href="?cat=enka" id="nav-enka">ENKA</a>
+  <a href="?cat=jazz" id="nav-jazz">JAZZ</a>
+</div>
+
 <div class="player-box">
-  <div class="player-ratio">
-    <div id="player"></div>
+  <div class="player-container">
+    <div class="player-ratio">
+      <div id="player"></div>
+    </div>
   </div>
 </div>
 
@@ -121,39 +170,51 @@
 </div>
 
 <script>
-/* 1. 단일 통합 데이터 정의 */
-const songs = [
-  // Old
-  { title: "🎵 Green Green Grass of Home", id: "uoo3P_xGYog" },
-  { title: "🎵 the house of the rising sun", id: "GZqX8kg4rSQ" },
-  { title: "🎵 Cotton Fields (1969)", id: "AlSjx6F5Pl8" },
-  { title: "🎵 Country Boots Music", id: "eQXVFUc4eDw" },
-  { title: "🎵 Red River Valley", id: "70PwqEHGlb4" },
-  { title: "🎵 Tennessee Waltz ( 1959 )", id: "5GWDgirgsq4" },
-  { title: "🎵 Sunset Country Classic", id: "XFKcH4446Vw" },
-  { title: "🎵 Take Me Home Country Roads", id: "iK0vsVRWsww" },
-  { title: "🎵 Do That To Me One More Time", id: "z_XfJyrNLRQ" },
-  { title: "🎵 클래식 컨트리 음악 플레이리스트 히트곡", id: "QOmIkPyHfOE" },
-  { title: "🎵 Best Country Heartland Songs", id: "8VO67jNHLpA" },
-  // Enka
-  { title: "🎵 린 - 인생외길", id: "rfjffhNxdLQ" },
-  { title: "🎵 都はるみ 裏町ごころ", id: "vnHDs5DlAG0" },
-  { title: "🎵 린 X 아즈마 아키", id: "vgPvhr7ZWbw" },
-  { title: "🎵 雪中花 伍代夏子", id: "B6WmSUodgRQ" },
-  // Jazz
-  { title: "🎷 번지없는 주막", id: "Z9vzsUxvsEg" },
-  { title: "🎷 영시의 이별", id: "29JJnC_L3OE" },
-  { title: "🎷 배호 모음집", id: "dEc-U2hgd6A" },
-  { title: "🎷 꿈꾸는 백마강", id: "50-PlZVG7aA" },
-  { title: "🎷 고향아줌마", id: "6wvUMP1ZS7U" }
-];
+const playlists = {
+  old: [
+    { title: "🎵 Green Green Grass of Home", id: "uoo3P_xGYog" },
+    { title: "🎵 the house of the rising sun", id: "GZqX8kg4rSQ" },
+    { title: "🎵 Cotton Fields (1969)", id: "AlSjx6F5Pl8" },
+    { title: "🎵 Country Boots Music", id: "eQXVFUc4eDw" },
+    { title: "🎵 Red River Valley", id: "70PwqEHGlb4" },
+    { title: "🎵 Tennessee Waltz ( 1959 )", id: "5GWDgirgsq4" },
+    { title: "🎵 Sunset Country Classic", id: "XFKcH4446Vw" },
+    { title: "🎵 Take Me Home Country Roads", id: "iK0vsVRWsww" },
+    { title: "🎵 Do That To Me One More Time", id: "z_XfJyrNLRQ" },
+    { title: "🎵 Best Country Heartland Songs", id: "8VO67jNHLpA" }
+  ],
+  enka: [
+    { title: "🎵 린 X 아즈마 아키-사사메 유키(細雪)", id: "vgPvhr7ZWbw" },
+    { title: "🎵 린 - 인생외길", id: "rfjffhNxdLQ" },
+    { title: "🎵 都はる미 裏町ごころ", id: "vnHDs5DlAG0" },
+    { title: "🎵 린 X 아즈마 아키", id: "vgPvhr7ZWbw" },
+    { title: "🎵 雪中花 伍代夏子", id: "B6WmSUodgRQ" }
+  ],
+  jazz: [
+    { title: "🎷 번지없는 주막", id: "Z9vzsUxvsEg" },
+    { title: "🎷 영시의 이별", id: "29JJnC_L3OE" },
+    { title: "🎷 배호 모음집", id: "dEc-U2hgd6A" },
+    { title: "🎷 꿈꾸는 백마강", id: "50-PlZVG7aA" },
+    { title: "🎷 고향아줌마", id: "6wvUMP1ZS7U" }
+  ]
+};
 
-/* 2. 플레이리스트 화면 생성 */
+function getCategory() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("cat") || "old";
+}
+
+const currentCategory = getCategory();
+const currentListData = playlists[currentCategory] || playlists["old"];
+
+const activeNav = document.getElementById("nav-" + currentCategory);
+if (activeNav) activeNav.classList.add("active");
+
 let videoIds = [];
 let currentIndex = 0;
 const table = document.getElementById("playlist");
 
-songs.forEach((song, index) => {
+currentListData.forEach((song, index) => {
   videoIds.push(song.id);
   const tr = document.createElement("tr");
   tr.innerHTML = `<td>${song.title}</td>`;
@@ -161,9 +222,7 @@ songs.forEach((song, index) => {
   table.appendChild(tr);
 });
 
-/* 3. 유튜브 API 관련 */
 var player;
-
 function onYouTubeIframeAPIReady() {
   player = new YT.Player("player", {
     videoId: videoIds[0],
@@ -229,7 +288,6 @@ function setActiveRow(index) {
   });
 }
 
-/* 버튼 이벤트 연결 */
 document.getElementById("btnPrev").addEventListener("click", playPrev);
 document.getElementById("btnNext").addEventListener("click", playNext);
 document.getElementById("btnPlayPause").addEventListener("click", togglePlayPause);
